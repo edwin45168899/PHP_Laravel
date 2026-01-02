@@ -37,7 +37,14 @@ Windows 11 + WSL2 + Docker Desktop
 
 ### 2. 重啟或進入環境
 - **進入介面**：[http://localhost:8080](http://localhost:8080)
-- **停止所有服務**：`docker compose down`
+- **停止所有服務**：
+  ```bash
+  # 如果你有啟動 mysql profile，必須帶上 profile 才能完全關閉
+  docker compose --profile mysql down
+  ```
+
+> ⚠️ **注意：為什麼只打 `docker compose down` 會殘留 MySQL？**
+> 因為 MySQL 目錄被歸類在 `mysql` profile 中。如果你在啟動時使用了 profile，但關閉時沒加，Docker 會認定你「只想關閉預設服務 (PHP/Nginx)」，從而導致 MySQL 容器繼續在背景執行。
 
 3. **使用 Artisan 與 Tinker**：
    ```bash
