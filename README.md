@@ -204,6 +204,15 @@ docker exec -it php-learn php artisan make:model Post
     *   `${{ github.actor }}`：使用 GitHub Actions 內建變數。
 *   **驗證方式**：推送代碼至 GitHub 後，在 Repo 的 **Actions** 標籤頁查看執行結果。
 
+### 練習 2：Laravel Pint (自動化代碼排版檢查)
+*   **檔案路徑**：`.github/workflows/laravel-pint.yml`
+*   **學習重點**：
+    *   `uses: actions/checkout@v4`：學習如何引用現成的 Action 插件。
+    *   `shivammathur/setup-php@v2`：設定特定的 PHP 版本。
+    *   `working-directory`：當 Laravel 在子目錄 (如 `src/`) 時，如何指定執行路徑。
+    *   **CI 概念**：讓機器幫你檢查代碼規範，不符規範的工作流會變為紅色（失敗）。
+*   **驗證方式**：推送後查看 Actions，試著故意寫出排版醜陋的 PHP 代碼（如亂點空格），看看 Action 是否會報錯。
+
 ---
 
 ## 學習建議

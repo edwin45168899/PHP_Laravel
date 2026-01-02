@@ -1,0 +1,36 @@
+name: Lint (Laravel Pint)
+
+# 觸發條件：當推送到 main 分支，或發起 Pull Request 時觸發
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  laravel-pint:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 檢出代碼 (務必讓 Action 存取到專案內容)
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 設定 PHP 環境
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, curl, libxml, zlib
+          coverage: none
+
+      # 3. 安裝 Composer 依賴
+      # 注意：工作目錄在 src 下，所以需要指定 working-directory
+      - name: Install Dependencies
+        run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+        working-directory: src
+
+      # 4. 執行 Laravel Pint 檢查
+      - name: Run Pint
+        run: ./vendor/bin/pint --test
+        working-directory: src
