@@ -1,100 +1,95 @@
-# PHP_Laravel
-學習 PHP / Laravel 的專案。  
-下面是一個「適合學習 PHP 語法與基礎 Web 開發」用的極簡 docker-compose 範例：一個 Nginx（反向代理 / Web Server）＋一個 PHP-FPM（跑 PHP）容器，程式碼掛載在 `./src`。  
+# PHP Laravel 學習專案
 
-***
-
-## 專案結構建議
-
-在你要練習的資料夾裡，先預期會長這樣：  
-
-- `docker-compose.yml`  
-- `nginx/`  
-  - `default.conf`（Nginx 設定）  
-- `src/`  
-  - `index.php`（你的 PHP 練習檔）
-
-***
-
-## Dockerfile
-建立 Dockerfile 以安裝 Xdebug  
-建立了 [docker/php/Dockerfile](./docker/php/Dockerfile)，在啟動時自動安裝並啟用 Xdebug。  
-
-## docker-compose.yml（Nginx + PHP-FPM）
-將 php 服務改為使用自定義 Build，並將 xdebug.ini 掛載到正確的 php 容器路徑。  
-
-[docker-compose.yml](./docker-compose.yml)
-
-說明（關鍵點）：  
-- `php` 使用自定義 Build，並將 
-xdebug.ini
- 掛載到正確的 
-php
- 容器路徑。
-
-[docker-compose.yml](./docker-compose.yml)
-
-說明（關鍵點）：  
-- `php` 使用官方 `php:8.3-fpm`，適合學新語法與 Laravel 新版。  
-- `nginx` 用輕量的 `nginx:alpine`，port 對外開 8080，避免佔用 80。  
-- `./src` 掛到 `/var/www/html`，你在主機編輯檔案後，容器會即時看到。  
-
-***
-
-## Nginx 設定：nginx/default.conf
-
-在專案裡建立 `nginx/default.conf`：  
-
-[nginx/default.conf](./nginx/default.conf)  
-
-- `fastcgi_pass php:9000;` 裡的 `php` 就是上面 compose 裡 `service` 的名字（容器 DNS 名稱）。  
-- 這樣所有 `.php` 會丟給 PHP-FPM 容器去執行。  
-
-***
-
-## 測試檔：src/index.php
-
-在 `src/index.php` 放一個超簡單測試：  
-
-```php
-<?php
-phpinfo();
-```
-
-或之後改成你要練習的 PHP 語法、函式、物件導向、Composer 等。  
-
-***
-
-## 啟動方式
-
-在專案根目錄（有 docker-compose.yml 的那層）執行：  
-
-```bash
-# docker compose down
-docker compose up -d
-# 或舊版 Docker：docker-compose up -d
-```
-
-然後在瀏覽器開：  
-
-```text
-http://localhost:8080
-```
-
-應該就會看到 `phpinfo()` 內容，代表 PHP + Nginx + volume 都正常。  
-
-***
-
-如果你接下來想要：  
-- 加上 **Xdebug（除錯 breakpoint 用）**  
-- 或者把這個環境調成 **Laravel 學習版**（加 composer / mysql）  
+本專案提供一個基於 Docker 的完整 Laravel 開發環境，包含 Nginx、PHP-FPM (PHP 8.3) 以及預載的 Xdebug 偵錯工具。
 
 ---
 
-## 啟動偵錯：
+## 環境
+Windows 11 + WSL2 + Docker Desktop
 
-1. 在 VS Code 按下 F5（或點選偵錯面板的 "Listen for Xdebug (Docker)"）。
-2. src/index.php 的第 2 行 phpinfo(); 設定中斷點。
-3. 開啟瀏覽器存取 http://localhost:8080。
-4. 現在中斷點應該可以正常觸發了。
+## 專案結構
 
+- `docker-compose.yml`: 環境定義檔
+- `docker/php/Dockerfile`: PHP 映像檔定義（含 Composer, Xdebug）
+- `nginx/default.conf`: Nginx 設定檔
+- `php-conf/xdebug.ini`: Xdebug 設定
+- `src/`: Laravel 原始碼目錄
+
+---
+
+## 快速啟動
+
+1. **啟動容器**：
+   在根目錄執行：
+   ```bash
+   docker compose up -d --build
+   ```
+
+2. **進入 Laravel 環境**：
+   存取：[http://localhost:8080](http://localhost:8080)
+
+3. **使用 Artisan 與 Tinker**：
+   ```bash
+   # 進入 Tinker 練習語法
+   docker exec -it php-learn php artisan tinker
+
+   # 執行 Artisan 指令
+   docker exec -it php-learn php artisan [command]
+   ```
+
+---
+
+## 🚀 偵錯方法 (Xdebug 詳解)
+
+本環境已經針對 Laravel 優化了偵錯設定，支援中斷點 (Breakpoint) 與變數監看。
+
+### 1. 啟動監聽 (VS Code)
+- 切換到 VS Code 的「執行與偵錯」(Ctrl+Shift+D)。
+- 下拉選單選擇 **"Listen for Xdebug (Docker)"**。
+- 按下綠色播放鍵（或 `F5`），底部狀態列變為橘色/藍色即代表監聽中。
+- .vscode/launch.json
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Listen for Xdebug (Docker)",
+            "type": "php",
+            "request": "launch",
+            "port": 9003,
+            "pathMappings": {
+                "/var/www/html": "${workspaceFolder}/src"
+            },
+            "log": false
+        }
+    ]
+}
+```
+
+### 2. 設定進入點 (以 Route 為例)
+- 打開 `src/routes/web.php`。
+- 在第 6 行 `return view('welcome');` 左側點擊一下，出現 **紅點**。
+
+### 3. 觸發偵錯
+- 打開瀏覽器存取 [http://localhost:8080](http://localhost:8080)。
+- 瀏覽器會進入加載狀態，此時 VS Code 會自動跳出並黃色高亮該行，你可以在左側看到當前的全域變數與物件狀態。
+
+### 📌 常見 Q&A
+- **斷不住？** 請檢查 `docker-compose.yml` 中的 `extra_hosts` 是否有 `host.docker.internal:host-gateway` (WSL2 必要)。
+- **路徑不正確？** 偵錯設定已鎖定 `pathMappings` 為 `/var/www/html` 映射到本地的 `${workspaceFolder}/src`。
+
+---
+
+## 學習建議
+
+- **路由練習**：修改 `src/routes/web.php` 練習定義 API 與網頁。
+- **語法練習**：頻繁使用 `php artisan tinker` 驗證小段程式碼。
+- **資料庫**：目前已安裝 `pdo_mysql` 擴充，如需資料庫容器可進一步擴充此環境。
+
+---
+
+## 常用指令備忘錄
+
+- 重啟服務：`docker compose restart`
+- 查看日誌：`docker compose logs -f`
+- 重新建立環境：`docker compose up -d --build --force-recreate`
