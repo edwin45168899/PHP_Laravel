@@ -14,6 +14,8 @@ Windows 11 + WSL2 + Docker Desktop
 - `nginx/default.conf`: Nginx 設定檔
 - `php-conf/xdebug.ini`: Xdebug 設定
 - `src/`: Laravel 原始碼目錄
+- **MySQL**: 8.0 資料庫
+- **Adminer**: 網頁版資料庫管理工具 (Port 8081)
 
 ---
 
@@ -39,7 +41,42 @@ Windows 11 + WSL2 + Docker Desktop
 
 ---
 
-## 🚀 偵錯方法 (Xdebug 詳解)
+## �️ 資料庫設定 (MySQL)
+
+本環境已內建 MySQL 8.0。
+
+1. **Laravel .env 設定**：
+   確保 `src/.env` 如下配置：
+   ```env
+   DB_CONNECTION=mysql
+   DB_HOST=db
+   DB_PORT=3306
+   DB_DATABASE=laravel
+   DB_USERNAME=laravel
+   DB_PASSWORD=secret
+   ```
+
+2. **執行資料表遷移 (Migration)**：
+   ```bash
+   docker exec -it php-learn php artisan migrate
+   ```
+
+---
+
+## 🛠️ Adminer (資料庫管理工具)
+
+不需安裝額外軟體，直接透過瀏覽器管理資料庫：
+- **存取網址**：[http://localhost:8081](http://localhost:8081)
+- **登入資訊**：
+  - 系　統：`MySQL`
+  - 伺服器：`db`
+  - 使用者：`laravel`
+  - 密　碼：`secret`
+  - 資料庫：`laravel`
+
+---
+
+## �🚀 偵錯方法 (Xdebug 詳解)
 
 本環境已經針對 Laravel 優化了偵錯設定，支援中斷點 (Breakpoint) 與變數監看。
 
