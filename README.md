@@ -260,21 +260,48 @@ docker exec -it php-learn php artisan make:model Post
 
 ---
 
-## 🌐 API 練習範例
+## 🌐 API 練習範例 (含認證機制)
 
-本專案已建立一個簡單的 API 範例，示範如何從 MySQL 讀取資料並以 JSON 回傳。
+本專案展示了從基礎資料讀取到具備安全性（Token 認證）的完整 API 流程。
 
-### 1. 範例路徑
+### 1. 基礎 User 列表 (無須認證)
 - **URL**: [http://localhost:8080/api/users](http://localhost:8080/api/users)
-- **控制器**: `src/app/Http/Controllers/Api/UserController.php`
-- **路由定義**: `src/routes/api.php`
+- **功能**: 展示如何從資料庫讀取所有使用者資料。
+- **檔案**:
+  - **控制器**: `src/app/Http/Controllers/Api/UserController.php`
+  - **路由**: `src/routes/api.php` (`Route::get('/users', ...)`)
 
-### 2. 測試方式
-- **瀏覽器**: 直接開啟上述連結。
-- **VS Code REST Client**:
-  1. 開啟專案根目錄下的 `local.http`。
-  2. 點擊 `GET http://localhost:8080/api/users` 上方的 **"Send Request"** 字樣。
-  *這是在開發 API 時最推薦的測試方式。*
+### 2. 進階：API 認證流程 (Sanctum)
+為了實作安全性驗證，本專案新增了基於 **Laravel Sanctum** 的登入機制。
+
+#### 🔹 實作流程與詳細說明：
+1. **模型升級 (`User.php`)**：
+   在 `App\Models\User` 中引入 `Laravel\Sanctum\HasApiTokens` 擴充。這讓 `User` 物件具備 `createToken()` 方法來產出 API 金鑰。
+2. **新增控制器 (`AuthController.php`)**：
+   - **資料驗證 (Validation)**：在處理請求前，使用 Laravel 的 `validate()` 機制優化資料品質。
+     - **Email 格式檢查**：採用 `email:rfc,dns` 規則。
+       - `rfc`：確保符合官方 RFC 規範。
+       - `dns`：檢查該網域是否真的存在 A 或 MX 紀錄，能有效防止虛假信箱。
+     - **註冊保護**：加入 `unique:users` 與 `confirmed` (確認密碼) 規則。
+   - **`register`**: 接收並驗證使用者資料，建立新帳號並產放 Token。
+   - **`login`**: 接收 `email`, `password` 與 `device_name`。驗證成功後會發放一個 `plainTextToken`。
+   - **`logout`**: 透過 `auth:sanctum` 中間層識別使用者，並移除當前導用的 Token。
+3. **路由保護 (`api.php`)**：
+   - 使用 `Route::middleware('auth:sanctum')` 群組保護需要登入才能存取的路徑。
+
+#### 🔹 測試指引：
+使用 **VS Code REST Client** 開啟 `local.http` 進行以下測試：
+
+| 功能 | 請求方法 | 路徑 | 說明 |
+| :--- | :--- | :--- | :--- |
+| **登入** | `POST` | `/api/login` | 需帶 JSON: `email`, `password`, `device_name` |
+| **獲取個資**| `GET` | `/api/user` | **需帶 Header**: `Authorization: Bearer <TOKEN>` |
+| **登出** | `POST` | `/api/logout` | **需帶 Header**: `Authorization: Bearer <TOKEN>` |
+
+> 💡 **開發小撇步**：
+> 當你執行 `/api/login` 拿到 Token 後，請將其複製並填入 `local.http` 的變數中，即可快速測試受保護的路由。
+
+---
 
 ### 3. 如何增加測試資料
 如果你想增加更多隨機使用者資料，可以執行：

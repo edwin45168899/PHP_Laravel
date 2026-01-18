@@ -11,12 +11,37 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     /**
+     * 處理註冊請求
+     */
+    public function register(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email:rfc,dns|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+            'device_name' => 'required',
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'token' => $user->createToken($request->device_name)->plainTextToken,
+            'user' => $user,
+        ]);
+    }
+
+    /**
      * 處理登入請求
      */
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'email' => 'required|email:rfc,dns',
             'password' => 'required',
             'device_name' => 'required',
         ]);
