@@ -17,7 +17,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email:rfc,dns|max:255|unique:users',
+            'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'device_name' => 'required',
         ]);
@@ -41,7 +41,7 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email:rfc,dns',
+            'email' => 'required|email',
             'password' => 'required',
             'device_name' => 'required',
         ]);

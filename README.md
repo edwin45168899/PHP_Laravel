@@ -148,6 +148,24 @@ docker exec -it php-learn php artisan make:model Post
 ```
 之後你就可以在程式碼中使用 `Post::all()` 來讀取資料了。
 
+### 步驟 5：建立種子資料 (Seeder)
+當資料表建好後，為了方便測試，我們會使用 Seeder 來產生假資料。
+
+- **用途**：自動填充測試資料、建立預設的管理員帳號或系統設定值。
+- **主要的檔案**：`src/database/seeders/DatabaseSeeder.php` (這是所有 Seeder 的入口點)。
+- **操作流程**：
+  1. **建立 Seeder**：`php artisan make:seeder PostSeeder` (選用，直接寫在 DatabaseSeeder 也可以)。
+  2. **執行 Seed**：
+     ```bash
+     # 執行所有在 DatabaseSeeder 定義的種子
+     docker exec -it php-learn php artisan db:seed
+     
+     # 或者在 migrate 時順便執行 (最常用)
+     docker exec -it php-learn php artisan migrate:fresh --seed
+     ```
+- **結合 Factory**：通常我們會搭配 Factory 來產生 10 筆或更多資料，例如：
+  `User::factory(10)->create();`
+
 ---
 
 ## 🚀 偵錯方法 (Xdebug 詳解)
@@ -317,47 +335,63 @@ docker exec -it php-learn php artisan tinker --execute="App\Models\User::factory
 - 查看日誌：`docker compose logs -f`
 - 重新建立環境：`docker compose up -d --build --force-recreate`
 
-## 單元測試
-- 停止所有服務
-```bash
-docker compose down
-```
-- 重新啟動服務
-```bash
-docker compose up -d
-```
-- 執行單元測試
-記得執行(需要 Xdebug)
-```bash
-docker exec -it php-learn php artisan test
-```
-- 單元測試報告
-```bash
- PASS  Tests\Unit\ExampleTest
-  ✓ that true is true                                                                                                  0.29s  
+## ✅ 單元測試與功能測試
 
-   PASS  Tests\Feature\ExampleTest
-  ✓ the application returns a successful response                                                                     11.01s  
+本專案使用 PHPUnit 進行測試。測試分為 **Feature (功能測試)** 與 **Unit (單元測試)**。
 
-  Tests:    2 passed (2 assertions)
-  Duration: 15.63s
+### 1. 測試環境配置
+為了保證測試的速度與獨立性，本專案已在 `src/phpunit.xml` 中進行了以下配置：
+- **資料庫**：使用 `sqlite` 的 `:memory:` 模式。這意味著測試會在記憶體中執行，速度極快且不會影響你實際的開發資料庫。
+- **環境變數**：`APP_ENV` 被設為 `testing`。
+
+### 2. 重要測試工具 (Traits)
+- **`RefreshDatabase`**：在測試類別中使用此 Trait，Laravel 會在每個測試案例執行前自動跑 Migration，執行後自動回滾，確保測試環境始終純淨。
+
+### 3. 實戰案例：API 認證測試 (`UserAuthTest.php`)
+我們針對 `/api/login` 實作了完整的測試，檔案位於 `src/tests/Feature/UserAuthTest.php`。
+
+**涵蓋的情境：**
+- **登入成功**：檢查 Token 是否正確回傳。
+- **密碼錯誤**：檢查是否回傳 422 驗證錯誤。
+- **格式錯誤**：檢查不合法的 Email 格式。
+- **欄位缺失**：檢查漏填資料時的反應。
+
+### 4. 執行測試指令
+在 **Docker 環境外** (Windows Terminal) 執行：
+```bash
+# 執行所有測試
+docker exec php-learn ./vendor/bin/phpunit
+
+# 執行特定測試類別 (最常用)
+docker exec php-learn ./vendor/bin/phpunit --filter UserAuthTest
 ```
 
-測試目錄: src/tests/ 【包含 Feature(功能測試) 和 Unit(單元測試) 子目錄】
+### ⚠️ 測試注意事項與常見坑位
+- **外部依賴問題 (DNS Check)**：
+  在 API 驗證中若使用了 `email:rfc,dns` 規則，在測試環境中可能會因為網路延遲或無法訪問外部 DNS 導致測試失敗或極慢。
+  - **解決建議**：在測試環境中，可考慮暫時將規則降級為 `email:rfc`。
+- **JSON 斷言**：
+  建議使用 `$this->postJson()` 代替 `$this->post()`，這會自動設定 Header，讓 Laravel 以 API 的方式處理請求與錯誤回傳。
+- **資料庫 Seed**：
+  如果測試需要特定的預設資料（如權限表），可以在測試的 `setUp()` 方法中呼叫 `$this->seed()`。
 
+---
+
+### 原有的測試基礎說明
+(以下為基礎建立指令參考)
 1. 單元測試 (Unit Tests)
 - 位置: src/tests/Unit
 - 用途: 測試單一函式或類別的邏輯，不依賴資料庫或 HTTP 請求。適合測試純邏輯運算。
 - 建立指令:
 ```bash
-docker-compose exec php php artisan make:test UserTest --unit
+docker exec php-learn php artisan make:test UserTest --unit
 ```
 2. 功能測試 (Feature Tests)
 - 位置: src/tests/Feature
 - 用途: 測試完整的功能流程，例如 API 請求、資料庫存取、頁面渲染等。這是最常用的測試類型。
 - 建立指令:
 ```bash
-docker-compose exec php php artisan make:test UserAuthTest
+docker exec php-learn php artisan make:test UserAuthTest
 ```
 4. 實戰範例
 假設我們要測試一個簡單的 API 端點。您可以建立一個新的測試檔案：
