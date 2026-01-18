@@ -350,6 +350,39 @@ docker exec -it php-learn php artisan make:model Post
 docker exec -it php-learn php artisan tinker --execute="App\Models\User::factory()->count(5)->create()"
 ```
 
+## 🪵 日誌查詢與管理 (Log Management)
+
+當程式發生錯誤（如 500 Error）時，查詢日誌是排查問題最快的方法。
+
+### 1. 即時監控系統日誌 (Docker Logs)
+這可以看到 Nginx、PHP 啟動錯誤或致命錯誤（Fatal Error）：
+```bash
+# 即時監控所有服務的日誌
+docker compose logs -f
+
+# 僅監控 PHP 容器的日誌 (最常用)
+docker compose logs -f php
+```
+
+### 2. 查看 Laravel 應用程式日誌
+Laravel 會將應用程式內部的錯誤（如資料庫連線失敗、程式邏輯報錯）紀錄在 `laravel.log`。
+
+- **檔案位置**：
+    - **主機 (Host)**: `src/storage/logs/laravel.log`
+    - **容器內 (Inside)**: `/var/www/html/storage/logs/laravel.log`
+- **查詢指令**：
+    ```bash
+    # 使用 tail 指令查看最後 100 行並持續監控
+    docker exec php-learn tail -f storage/logs/laravel.log
+    ```
+
+### 3. 日誌權限疑難排解
+若遇到 `The stream or file "...laravel.log" could not be opened: failed to open stream: Permission denied`：
+請在終端機執行：
+```bash
+docker exec php-learn chmod -R 777 storage bootstrap/cache
+```
+
 ---
 
 ## 常用指令備忘錄
